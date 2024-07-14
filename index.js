@@ -60,8 +60,8 @@ const verifyToken = async (req, res, next) => {
 async function run() {
     try {
 
-        const database = client.db("carDoctor");
-        const services = await database.collection("services");
+        const database = client.db("assignmentDB");
+        const assignments = await database.collection("assignments");
 
         app.post('/jwt', (req, res) => {
             const user_email = req.body
@@ -78,17 +78,55 @@ async function run() {
                 //signed: true // Indicates if the cookie should be signed
             }).send({ success: true })
         })
-        app.get('/services/:email', verifyToken, async (req, res) => {
-            if(req.params.email!=req.user){
-                return res.send({error:'Unauthorized Access!'})
-            }
-            const cursor = services.find({})
+        app.get('/assignments/', async (req, res) => {
+            const cursor = assignments.find({})
             const result = await cursor.toArray()
             return res.send(result)
         })
+        app.get('assignments/:userEmail',async (req, res)=>{
+            const query={userEmail:req.params.userEmail}
+            const cursor = assignments.find(query)
+            const result = await cursor.toArray()
+            return res.send(result)
+        })
+        app.post('/create-assignment',(req, res)=>{
+            const result = await assignments.insertOne(req.body)
+            res.send(result)
+        })
+        app.patch('/update-assignment/:id',async(req, res)=>{
+            console.log(req.params.id)
+            const filter = {_id: new ObjectId(req.params.id)}
+            const craft = {
+                $set:{
+                    //change all property values 
+                    title             : req.body.title,
+                    description          : req.body.description,
+                    imageUrl             : req.body.imageUrl,
+                    marks               : req.body.marks,
+                    difficulty              : req.body.difficulty,
+                    dueDate             : req.body.dueDate,
+                    status              : req.body.status,
+                    user_name           : req.body.user_name,
+                    user_email          : req.body.user_email
+                }
+            }
+            const result = await assignments.updateOne(filter,craft,{upsert:true})
+            res.send(result)
+        })
+
+        app.delete('/delete-assignment/:id', async(req, res)=>{
+            const query = { _id: new ObjectId(req.params.id) };
+            const result = await assignments.deleteOne(query);
+            if (result.deletedCount === 1) {
+                //console.log("Successfully deleted one document.");
+              } else {
+                //console.log("No documents matched the query. Deleted 0 documents.");
+              }
+            res.send(result)
+        })
 
         app.post('/logout', async (req, res) => {
-            //console.log(res.cookie)
+            console.log(res.cookie)
             res.clearCookie('token', { maxAge: 0 })
             res.send({ success: true })
         })
