@@ -1,0 +1,119 @@
+require('dotenv').config()
+const express = require('express')
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const cookie_parser = require('cookie-parser')
+const app = express()
+const cors = require('cors')
+const jwt = require('jsonwebtoken')
+const port = process.env.PORT || 5000
+
+const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.ew2qmt5.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`
+const client = new MongoClient(uri, {
+    serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+    }
+})
+app.use(cookie_parser())
+const corsOptions = {
+    origin: true,
+    //methods: ['POST', 'GET','PUT', 'PATCH', 'DELETE'],
+    //allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+
+}
+
+app.use(cors(corsOptions))             //...cors middleware
+// app.all('*', function (req, res) {
+//     res.header("Access-Control-Allow-Origin", "*");
+//     res.header("Access-Control-Allow-Headers", "Content-Type,Content-Length, Authorization, Accept,X-Requested-With");
+//     res.header("Access-Control-Allow-Methods", "PUT,POST,GET,DELETE,OPTIONS");
+//     //...
+//    });
+app.use(express.json())     //...get request body
+
+//logger middleware
+const logger = async (req, res, next) => {
+    console.log('Req => ', req.cookies)//
+    //...do something to log user activity
+    next()
+}
+const verifyToken = async (req, res, next) => {
+    const token = req.cookies.token
+   // console.log('cookie=> ', req.cookies.token)
+    if (!token) {
+        return res.send({ error: 'unauthorised access' })
+    }
+
+    const result = await jwt.verify(req.cookies?.token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) {
+            //console.log("Error=> ",err)
+            return res.send({ error: 'forbidden' })
+
+        }//end if
+        if (decoded) {
+            console.log('Decoded ',decoded)
+            if (decoded.email === req.params.email) {
+                req.user = req.params.email
+                console.log('User', req.user)
+            }
+            next()
+        }
+    })
+}
+
+async function run() {
+    try {
+
+        const database = client.db("carDoctor");
+        const services = await database.collection("services");
+
+        app.post('/jwt', (req, res) => {
+            const user_email = req.body
+            console.log('Req-> ', req.body)
+            //sign jwt token
+            //jwt.sign()
+            const token = jwt.sign(user_email, process.env.JWT_SECRET, { expiresIn: '1h' })
+            // console.log(token)
+            res.status(200).cookie('token', token, {
+                maxAge: 1000 * 60 * 60, // would expire after 15 minutes
+                httpOnly: true, // The cookie only accessible by the web server
+                secure: true, // for localhost only
+                sameSite: 'none',
+                //signed: true // Indicates if the cookie should be signed
+            }).send({ success: true })
+        })
+        app.get('/services/:email', verifyToken, async (req, res) => {
+            if(req.params.email!=req.user){
+                return res.send({error:'Unauthorized Access!'})
+            }
+            const cursor = services.find({})
+            const result = await cursor.toArray()
+            return res.send(result)
+        })
+
+        app.post('/logout', async (req, res) => {
+            //console.log(res.cookie)
+            res.clearCookie('token', { maxAge: 0 })
+            res.send({ success: true })
+        })
+
+        // Send a ping to confirm a successful connection
+        await client.db("car_doctor").command({ ping: 1 });
+        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+
+    } catch (e) {
+        console.error(e);
+    }
+    finally {
+        //await client.close();
+    }
+
+}
+run().catch(console.dir);
+
+
+app.listen(port, () => {
+    console.log('backend running')
+})
