@@ -7,7 +7,7 @@ const cors = require('cors')
 const jwt = require('jsonwebtoken')
 const port = process.env.PORT || 5000
 
-const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.ew2qmt5.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`
+const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.f31vqfv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0   `
 const client = new MongoClient(uri, {
     serverApi: {
         version: ServerApiVersion.v1,
@@ -18,19 +18,13 @@ const client = new MongoClient(uri, {
 app.use(cookie_parser())
 const corsOptions = {
     origin: true,
-    //methods: ['POST', 'GET','PUT', 'PATCH', 'DELETE'],
-    //allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: ['POST', 'GET','PUT', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
-
 }
 
 app.use(cors(corsOptions))             //...cors middleware
-// app.all('*', function (req, res) {
-//     res.header("Access-Control-Allow-Origin", "*");
-//     res.header("Access-Control-Allow-Headers", "Content-Type,Content-Length, Authorization, Accept,X-Requested-With");
-//     res.header("Access-Control-Allow-Methods", "PUT,POST,GET,DELETE,OPTIONS");
-//     //...
-//    });
+
 app.use(express.json())     //...get request body
 
 //logger middleware
