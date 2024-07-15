@@ -7,7 +7,9 @@ const cors = require('cors')
 const jwt = require('jsonwebtoken')
 const port = process.env.PORT || 5000
 
-const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.f31vqfv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0   `
+const uri = `mongodb+srv://${process.env.DB_USERNAME}:${encodeURIComponent(process.env.DB_PASSWORD)}@cluster0.f31vqfv.mongodb.net/?appName=Cluster0`;
+
+
 const client = new MongoClient(uri, {
     serverApi: {
         version: ServerApiVersion.v1,
@@ -83,14 +85,21 @@ async function run() {
             const result = await cursor.toArray()
             return res.send(result)
         })
+        app.get('assignment/:id',async (req, res)=>{
+            const query={_id: new ObjectId(req.params.id)}
+            const result = assignments.findOne(query)
+            //const result = await cursor.toArray()
+            return res.send(result)
+        })
         app.get('assignments/:userEmail',async (req, res)=>{
             const query={userEmail:req.params.userEmail}
             const cursor = assignments.find(query)
             const result = await cursor.toArray()
             return res.send(result)
         })
-        app.post('/create-assignment',(req, res)=>{
+        app.post('/create-assignment',async (req, res)=>{
             const result = await assignments.insertOne(req.body)
+            console.log(result)
             res.send(result)
         })
         app.patch('/update-assignment/:id',async(req, res)=>{
