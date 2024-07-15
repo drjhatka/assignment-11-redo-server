@@ -21,8 +21,8 @@ app.use(cookie_parser())
 const corsOptions = {
     origin: true,
     methods: ['POST', 'GET','PUT', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
+   // allowedHeaders: ['Content-Type', 'Authorization'],
+    //credentials: true
 }
 
 app.use(cors(corsOptions))             //...cors middleware
@@ -83,13 +83,23 @@ async function run() {
         app.get('/assignments/', async (req, res) => {
             const cursor = assignments.find({})
             const result = await cursor.toArray()
+           // console.log(result)
             return res.send(result)
         })
-        app.get('assignment/:id',async (req, res)=>{
+        app.get('/assignment/:id',async (req, res)=>{
             const query={_id: new ObjectId(req.params.id)}
             const result = assignments.findOne(query)
             //const result = await cursor.toArray()
             return res.send(result)
+        })
+        app.post('/filtered-assignments',async(req, res)=>{
+            console.log(req.body.difficulty)
+            const query={difficulty:req.body.difficulty.difficulty}
+            const cursor = assignments.find(query)
+            const result = await cursor.toArray()
+            //console.log(result)
+            return res.send(result)
+
         })
         app.get('assignments/:userEmail',async (req, res)=>{
             const query={userEmail:req.params.userEmail}
