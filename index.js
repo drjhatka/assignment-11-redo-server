@@ -19,10 +19,10 @@ const client = new MongoClient(uri, {
 })
 app.use(cookie_parser())
 const corsOptions = {
-    origin: true,
-    methods: ['POST', 'GET','PUT', 'PATCH', 'DELETE'],
-   // allowedHeaders: ['Content-Type', 'Authorization'],
-    //credentials: true
+    origin: ['http://localhost:5173', 'https://assignment-11-redo-client.web.app'],
+    methods: ['POST', 'GET', 'PUT', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
 }
 
 app.use(cors(corsOptions))             //...cors middleware
@@ -37,7 +37,7 @@ const logger = async (req, res, next) => {
 }
 const verifyToken = async (req, res, next) => {
     const token = req.cookies.token
-   // console.log('cookie=> ', req.cookies.token)
+    // console.log('cookie=> ', req.cookies.token)
     if (!token) {
         return res.send({ error: 'unauthorised access' })
     }
@@ -49,7 +49,7 @@ const verifyToken = async (req, res, next) => {
 
         }//end if
         if (decoded) {
-            console.log('Decoded ',decoded)
+            console.log('Decoded ', decoded)
             if (decoded.email === req.params.email) {
                 req.user = req.params.email
                 console.log('User', req.user)
@@ -63,7 +63,8 @@ async function run() {
     try {
 
         const database = client.db("assignmentDB");
-        const assignments = await database.collection("assignments");
+        const assignments = await database.collection("assignments")
+        const submissions = await database.collection("submissions")
 
         app.post('/jwt', (req, res) => {
             const user_email = req.body
@@ -83,64 +84,73 @@ async function run() {
         app.get('/assignments/', async (req, res) => {
             const cursor = assignments.find({})
             const result = await cursor.toArray()
-           // console.log(result)
+            // console.log(result)
             return res.send(result)
         })
-        app.get('/assignment/:id',async (req, res)=>{
-            const query={_id: new ObjectId(req.params.id)}
+        app.get('/submissions/', async (req, res) => {
+            const cursor = submissions.find({})
+            const result = await cursor.toArray()
+            // console.log(result)
+            return res.send(result)
+        })
+        app.get('/assignment/:id', async (req, res) => {
+            const query = { _id: new ObjectId(req.params.id) }
             const result = assignments.findOne(query)
             //const result = await cursor.toArray()
             return res.send(result)
         })
-        app.post('/filtered-assignments',async(req, res)=>{
+        app.post('/filtered-assignments', async (req, res) => {
             console.log(req.body.difficulty)
-            const query={difficulty:req.body.difficulty.difficulty}
+            const query = { difficulty: req.body.difficulty.difficulty }
             const cursor = assignments.find(query)
             const result = await cursor.toArray()
             //console.log(result)
             return res.send(result)
 
         })
-        app.get('assignments/:userEmail',async (req, res)=>{
-            const query={userEmail:req.params.userEmail}
+        app.post('/create-submission/', async (req, res) => {
+            const result = await submissions.insertOne(req.body)
+            console.log(result)
+            res.send(result)
+        })
+        app.get('/assignments/:userEmail', async (req, res) => {
+            const query = { userEmail: req.params.userEmail }
             const cursor = assignments.find(query)
             const result = await cursor.toArray()
             return res.send(result)
         })
-        app.post('/create-assignment',async (req, res)=>{
+        app.post('/create-assignment', async (req, res) => {
             const result = await assignments.insertOne(req.body)
             console.log(result)
             res.send(result)
         })
-        app.patch('/update-assignment/:id',async(req, res)=>{
+        app.patch('/update-assignment/:id', async (req, res) => {
             console.log(req.params.id)
-            const filter = {_id: new ObjectId(req.params.id)}
+            const filter = { _id: new ObjectId(req.params.id) }
             const craft = {
-                $set:{
+                $set: {
                     //change all property values 
-                    title             : req.body.title,
-                    description          : req.body.description,
-                    imageUrl             : req.body.imageUrl,
-                    marks               : req.body.marks,
-                    difficulty              : req.body.difficulty,
-                    dueDate             : req.body.dueDate,
-                    status              : req.body.status,
-                    user_name           : req.body.user_name,
-                    user_email          : req.body.user_email
+                    title: req.body.title,
+                    description: req.body.description,
+                    imageUrl: req.body.imageUrl,
+                    marks: req.body.marks,
+                    difficulty: req.body.difficulty,
+                    dueDate: req.body.dueDate,
+                    status: req.body.status
                 }
             }
-            const result = await assignments.updateOne(filter,craft,{upsert:true})
+            const result = await assignments.updateOne(filter, craft, { upsert: true })
             res.send(result)
         })
 
-        app.delete('/delete-assignment/:id', async(req, res)=>{
+        app.delete('/delete-assignment/:id', async (req, res) => {
             const query = { _id: new ObjectId(req.params.id) };
             const result = await assignments.deleteOne(query);
             if (result.deletedCount === 1) {
                 //console.log("Successfully deleted one document.");
-              } else {
+            } else {
                 //console.log("No documents matched the query. Deleted 0 documents.");
-              }
+            }
             res.send(result)
         })
 
