@@ -37,7 +37,7 @@ const logger = async (req, res, next) => {
 }
 const verifyToken = async (req, res, next) => {
     const token = req.cookies.token
-    // console.log('cookie=> ', req.cookies.token)
+     console.log('cookie=> ', req.cookies.token)
     if (!token) {
         return res.send({ error: 'unauthorised access' })
     }
@@ -68,7 +68,7 @@ async function run() {
 
         app.post('/jwt', (req, res) => {
             const user_email = req.body
-            console.log('Req-> ', req.body)
+            console.log('Req-> ', req.body, user_email)
             //sign jwt token
             //jwt.sign()
             const token = jwt.sign(user_email, process.env.JWT_SECRET, { expiresIn: '1h' })
@@ -87,7 +87,7 @@ async function run() {
             // console.log(result)
             return res.send(result)
         })
-        app.get('/submissions/', async (req, res) => {
+        app.get('/submissions/',  verifyToken,  async (req, res) => {
             const cursor = submissions.find({})
             const result = await cursor.toArray()
             // console.log(result)
@@ -108,38 +108,38 @@ async function run() {
             return res.send(result)
 
         })
-        app.post('/create-submission/', async (req, res) => {
+        app.post('/create-submission/', verifyToken, async (req, res) => {
             const result = await submissions.insertOne(req.body)
             console.log(result)
             res.send(result)
         })
-        app.get('/assignments/:userEmail', async (req, res) => {
+        app.get('/assignments/:userEmail',  verifyToken,  async (req, res) => {
             const query = { userEmail: req.params.userEmail }
             const cursor = assignments.find(query)
             const result = await cursor.toArray()
             return res.send(result)
         })
-        app.post('/create-assignment', async (req, res) => {
+        app.post('/create-assignment', verifyToken,  async (req, res) => {
             const result = await assignments.insertOne(req.body)
             console.log(result)
             res.send(result)
         })
-        app.patch('/give-mark/:id',async(req, res)=>{
+        app.patch('/give-mark/:id', verifyToken,  async (req, res) => {
             //console.log(req.body)
             const filter = { _id: new ObjectId(req.params.id) }
             const submission = {
                 $set: {
                     marksGiven: req.body.mark,
-                    note:       req.body.remark,
-                    status:     req.body.status
+                    note: req.body.remark,
+                    status: req.body.status
                 }
             }
-           const result = await submissions.updateOne(filter, submission, { upsert: true })
+            const result = await submissions.updateOne(filter, submission, { upsert: true })
             res.send(result)
         })
-        app.patch('/update-assignment/:id', async (req, res) => {
+        app.patch('/update-assignment/:id', verifyToken,  async (req, res) => {
             console.log(req.params.id)
-            
+
             const filter = { _id: new ObjectId(req.params.id) }
             const craft = {
                 $set: {
@@ -157,7 +157,7 @@ async function run() {
             res.send(result)
         })
 
-        app.delete('/delete-assignment/:id', async (req, res) => {
+        app.delete('/delete-assignment/:id', verifyToken,  async (req, res) => {
             const query = { _id: new ObjectId(req.params.id) };
             const result = await assignments.deleteOne(query);
             if (result.deletedCount === 1) {
