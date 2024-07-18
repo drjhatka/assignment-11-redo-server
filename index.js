@@ -124,6 +124,19 @@ async function run() {
             console.log(result)
             res.send(result)
         })
+        app.patch('/give-mark/:id',async(req, res)=>{
+            //console.log(req.body)
+            const filter = { _id: new ObjectId(req.params.id) }
+            const submission = {
+                $set: {
+                    marksGiven: req.body.mark,
+                    note:       req.body.remark,
+                    status:     req.body.status
+                }
+            }
+           const result = await submissions.updateOne(filter, submission, { upsert: true })
+            res.send(result)
+        })
         app.patch('/update-assignment/:id', async (req, res) => {
             console.log(req.params.id)
             
